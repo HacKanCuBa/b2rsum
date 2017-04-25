@@ -1,0 +1,297 @@
+#!/usr/bin/env bash
+
+#-----------------------------------------------------------------------------
+# b2rsum
+# Create and verify BLAKE2 hash sums from files or directories recursively.
+# It uses GNU b2sum internally, and its output file is fully compatible.
+#
+##############################################################################
+#
+#    b2rsum Copyright © 2017 HacKan (https://hackan.net)
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+##############################################################################
+#
+# Requirements
+# ===============
+#
+#  - GNU Bash
+#  - GNU b2sum which is part of the coreutils package.
+#  - GNU Getopt which is part of the util-linux package.
+#
+#------------------------------------------------------------------------
+# Changelog
+#=====================
+#
+# v0.1.0
+# - First release
+#
+# v0.0.1
+# - Developing based on sharsum.
+#
+#------------------------------------------------------------------------
+
+# Config
+declare -r VERSION="0.1.0"
+declare -r OUTPUT_FILENAME_DEFAULT="BLAKE2SUMS"
+declare -r QUIET_DEFAULT=false
+#--------------------------#
+
+# Settings
+# Do not edit unless you fully undestand these
+declare -i -r EXIT_SUCCESS=0
+declare -i -r EXIT_FAILURE=1
+declare -i -r EXIT_WARNING=2
+#--------------------------#
+
+# Helpers
+cout() {
+	if ! ${QUIET} && ! ${VERY_QUIET}; then
+		if [[ -f "$1" ]]; then
+			cat "$1"
+		else
+			echo "$@"
+		fi
+	fi
+}
+
+warn() {
+	if ! ${VERY_QUIET}; then
+		echo "Warning: $*" >&2
+	fi
+	return $EXIT_WARNING
+}
+
+die() {
+	# Show error and bail out
+	if ! ${VERY_QUIET}; then
+		echo "!!! Error: $*" >&2
+	fi
+	exit $EXIT_FAILURE
+}
+
+# Check sneaky paths, extracted from pass project
+check_sneaky_paths() {
+	local path
+	for path in "$@"; do
+		[[ $path =~ /\.\.$ || $path =~ ^\.\./ || $path =~ /\.\./ || $path =~ ^\.\.$ ]] && die "Please use paths without '..'"
+	done
+}
+#--------------------------#
+
+# Actions
+check_output_file() {
+	check_sneaky_paths "$OUTPUT_FILE"
+	rm -f "$OUTPUT_FILE" > /dev/null 2>&1
+	touch "$OUTPUT_FILE" > /dev/null 2>&1
+	[[ -w "$OUTPUT_FILE" ]] || die "Selected output file '$OUTPUT_FILE' can't be written"
+}
+
+check_dependencies() {
+	# Returns 0 if dependencies are installed, non-zero otherwise
+	local -a DEPENDENCIES dep result
+	DEPENDENCIES=( "b2sum" "getopt" )
+	result=0
+	for dep in "${DEPENDENCIES[@]}"; do
+		which "$dep" > /dev/null 2>&1
+		result=$((result | $?))
+	done
+	return $result
+}
+
+cmd_license() {
+	cat <<-_EOF
+		${PROGRAM}: recursive BLAKE2 hash maker and verifier
+		Copyright (C) 2017 HacKan (https://hackan.net)
+
+		This program is free software: you can redistribute it and/or modify
+		it under the terms of the GNU General Public License as published by
+		the Free Software Foundation, either version 3 of the License, or
+		(at your option) any later version.
+
+		This program is distributed in the hope that it will be useful,
+		but WITHOUT ANY WARRANTY; without even the implied warranty of
+		MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+		GNU General Public License for more details.
+
+		You should have received a copy of the GNU General Public License
+		along with this program.  If not, see <http://www.gnu.org/licenses/>.
+	_EOF
+}
+
+cmd_version() {
+	cat <<-_EOF
+		${PROGRAM} v${VERSION} Copyright (C) 2017 HacKan (https://hackan.net)
+	_EOF
+}
+
+cmd_help() {
+	cmd_version
+	cat <<-_EOF
+
+		Usage: ${PROGRAM} [OPTION]... [FILE or DIRECTORY]...
+		Print or check BLAKE2 (512-bit) checksums recursively.
+		If no FILE or DIRECTORY is indicated, or it's a dot (.), then the current
+		directory is processed.
+
+		Options:
+		  -b, --binary         read in binary mode
+		  -c, --check          read BLAKE2 sums from the FILEs and check them
+		  -l, --length         digest length in bits; must not exceed the maximum for
+		                       the blake2 algorithm and must be a multiple of 8
+		      --tag            create a BSD-style checksum
+		  -t, --text           read in text mode (default)
+		  -o, --output         output to a file named $OUTPUT_FILENAME_DEFAULT in the
+		                       current directory instead of standard output
+		  -q, --quiet          quiet mode: don't print messages, only hashes; during
+		                       check mode, don't print OK for each successfully
+		                       verified file
+		  -s, --status         very quiet mode: output only hashes, no messages; status
+		                       code shows success
+
+		The following five options are useful only when verifying checksums:
+		      --ignore-missing  don't fail or report status for missing files
+		      --strict         exit non-zero for improperly formatted checksum lines
+		  -w, --warn           warn about improperly formatted checksum lines
+
+		  -h, --help           show this text and exit
+		  --license            show license and exit
+		  --version            show version information and exit
+
+		Sums are made using 'b2sum'. Full documentation at: 
+		  <http://www.gnu.org/software/coreutils/b2sum>.
+		The sums are computed as described in RFC 7693.  When checking, the input
+		should be a former output of this program.  The default mode is to print a
+		line with checksum, a space, a character indicating input mode ('*' for binary,
+		' ' for text or where binary is insignificant), and name for each FILE.
+
+		This program comes with ABSOLUTELY NO WARRANTY.
+		This is free software, and you are welcome to redistribute it under certain
+		conditions; type '$PROGRAM --license' for details.
+
+		More information may be found in the ${PROGRAM}(1) man page.
+	_EOF
+}
+
+cmd_create() {
+	local -i ECODE=${EXIT_SUCCESS}
+	local -a TOSCAN=( "$@" )
+	local -i RESULT
+	local EXEC
+
+	[[ "${#TOSCAN[@]}" -eq 0 ]] && TOSCAN=(".")
+
+	[[ -n "$OUTPUT_FILE" ]] && cout "Saving results in $OUTPUT_FILE"
+
+	for item in "${TOSCAN[@]}"; do
+		check_sneaky_paths "$item"
+
+		if [[ "$item" == "-" ]]; then
+			# shellcheck disable=SC2016
+			EXEC='cat - | b2sum $([[ ${#B2SUM_OPTS[*]} -ge 1 ]] && printf "%s" "${B2SUM_OPTS[*]}")'
+		elif [[ -e "$item" ]]; then
+			# shellcheck disable=SC2016
+			EXEC='find -L "$item" -type f ! -name "$OUTPUT_FILE" -print0 | xargs -0 b2sum $([[ ${#B2SUM_OPTS[*]} -ge 1 ]] && printf "%s" "${B2SUM_OPTS[*]}")'
+		else
+			# shellcheck disable=SC2016
+			EXEC='warn "File '$item' not found, skipping..."'
+		fi
+		
+		if [[ -z "$OUTPUT_FILE" ]]; then
+			eval "$EXEC"
+		else
+			eval "$EXEC" >> "$OUTPUT_FILE"
+		fi
+		RESULT=$?
+		[[ $RESULT -ne 0 ]] && ECODE=$RESULT
+	done
+
+	return $ECODE
+}
+
+cmd_check() {
+	local -i ECODE=${EXIT_SUCCESS}
+	local -a HASHFILES=( "$@" )
+	local -i RESULT
+	local EXEC
+
+	[[ -n "$OUTPUT_FILE" ]] && cout "Saving results in $OUTPUT_FILE"
+
+	for hashfile in "${HASHFILES[@]}"; do
+		check_sneaky_paths "$hashfile"
+
+		if [[ -r "$hashfile" ]]; then
+			# shellcheck disable=SC2016
+			EXEC='b2sum --check $([[ ${#B2SUM_OPTS[*]} -ge 1 ]] && printf "%s" "${B2SUM_OPTS[*]}") $([[ ${#B2SUM_OPTS_CHECK[*]} -ge 1 ]] && printf "%s" "${B2SUM_OPTS_CHECK[*]}") "$hashfile"'
+		else
+			# shellcheck disable=SC2016
+			EXEC='warn "File '$hashfile' not found or can not be accessed, skipping..."'
+		fi
+
+		if [[ -z "$OUTPUT_FILE" ]]; then
+			eval "$EXEC"
+		else
+			eval "$EXEC" >> "$OUTPUT_FILE"
+		fi
+		RESULT=$?
+		[[ $RESULT -ne 0 ]] && ECODE=$RESULT
+	done
+
+	return $ECODE
+}
+#--------------------------#
+
+# Main
+declare -r PROGRAM="${0##*/}"
+declare -a B2SUM_OPTS=()
+declare -a B2SUM_OPTS_CHECK=()
+declare OPTS=''
+declare MODE_CHECK=false
+declare QUIET=$QUIET_DEFAULT
+declare VERY_QUIET=false
+declare OUTPUT_FILE=''
+
+check_dependencies || die "Dependencies not met, can't continue"
+
+# Arguments
+OPTS="$(getopt -o hbcltwosq -l help,version,license,binary,check,length,text,tag,ignore-missing,quiet,status,strict,warn,output -n "$PROGRAM" -- "$@")"
+eval set -- "$OPTS"
+while true; do case $1 in
+	-h|--help)			cmd_help; exit $EXIT_SUCCESS;;
+	--version)			cmd_version; exit $EXIT_SUCCESS;;
+	--license)			cmd_license; exit $EXIT_SUCCESS;;
+	-b|--binary)		B2SUM_OPTS+=( '--binary' ); shift;;
+	-c|--check)			MODE_CHECK=true; shift;;
+	-l|--length)		B2SUM_OPTS+=( '--length' ); shift;;
+	--tag)				B2SUM_OPTS+=( '--tag' ); shift;;
+	-t|--text)			B2SUM_OPTS+=( '--text' ); shift;;
+	--ignore-missing)	B2SUM_OPTS_CHECK+=( '--ignore-missing' ); shift;;
+	-q|--quiet)			QUIET=true; B2SUM_OPTS_CHECK+=( '--quiet' ); shift;;
+	-s|--status)		VERY_QUIET=true; B2SUM_OPTS_CHECK+=( '--status' ); shift;;
+	--strict)			B2SUM_OPTS_CHECK+=( '--strict' ); shift;;
+	-w|--warn)			B2SUM_OPTS_CHECK+=( '--warn' ); shift;;
+	-o|--output)		OUTPUT_FILE="$OUTPUT_FILENAME_DEFAULT"; check_output_file; shift;;
+	--) shift; break ;;
+esac done
+
+cout "$(cmd_version)" >&2
+cout >&2
+
+if $MODE_CHECK; then
+	cmd_check "$@"
+else
+	cmd_create "$@"
+fi
+
+exit $?
