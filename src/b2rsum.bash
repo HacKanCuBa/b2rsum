@@ -160,7 +160,7 @@ cmd_help() {
 		  -s, --status         very quiet mode: output only hashes, no messages; status
 		                       code shows success
 
-		The following five options are useful only when verifying checksums:
+		The following three options are useful only when verifying checksums:
 		      --ignore-missing  don't fail or report status for missing files
 		      --strict         exit non-zero for improperly formatted checksum lines
 		  -w, --warn           warn about improperly formatted checksum lines
