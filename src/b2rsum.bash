@@ -34,6 +34,11 @@
 # Changelog
 #=====================
 #
+# v0.1.1
+# - Fix check mode not reading inline data
+# - Fix length option being improperly parsed
+# - Bail out on wrong option
+#
 # v0.1.0
 # - First release
 #
@@ -43,7 +48,7 @@
 #------------------------------------------------------------------------
 
 # Config
-declare -r VERSION="0.1.0"
+declare -r VERSION="0.1.1"
 declare -r OUTPUT_FILENAME_DEFAULT="BLAKE2SUMS"
 declare -r QUIET_DEFAULT=false
 #--------------------------#
@@ -199,7 +204,7 @@ cmd_create() {
 
 		if [[ "$item" == "-" ]]; then
 			# shellcheck disable=SC2016
-			EXEC='cat - | b2sum $([[ ${#B2SUM_OPTS[*]} -ge 1 ]] && printf "%s" "${B2SUM_OPTS[*]}")'
+			EXEC='cat - | b2sum $([[ ${#B2SUM_OPTS[*]} -ge 1 ]] && printf "%s" "${B2SUM_OPTS[*]}") -'
 		elif [[ -e "$item" ]]; then
 			# shellcheck disable=SC2016
 			EXEC='find -L "$item" -type f ! -name "$OUTPUT_FILE" -print0 | xargs -0 b2sum $([[ ${#B2SUM_OPTS[*]} -ge 1 ]] && printf "%s" "${B2SUM_OPTS[*]}")'
@@ -231,7 +236,10 @@ cmd_check() {
 	for hashfile in "${HASHFILES[@]}"; do
 		check_sneaky_paths "$hashfile"
 
-		if [[ -r "$hashfile" ]]; then
+		if [[ "$hashfile" == "-" ]]; then
+			# shellcheck disable=SC2016
+			EXEC='cat - | b2sum --check $([[ ${#B2SUM_OPTS[*]} -ge 1 ]] && printf "%s" "${B2SUM_OPTS[*]}") $([[ ${#B2SUM_OPTS_CHECK[*]} -ge 1 ]] && printf "%s" "${B2SUM_OPTS_CHECK[*]}") -'
+		elif [[ -r "$hashfile" ]]; then
 			# shellcheck disable=SC2016
 			EXEC='b2sum --check $([[ ${#B2SUM_OPTS[*]} -ge 1 ]] && printf "%s" "${B2SUM_OPTS[*]}") $([[ ${#B2SUM_OPTS_CHECK[*]} -ge 1 ]] && printf "%s" "${B2SUM_OPTS_CHECK[*]}") "$hashfile"'
 		else
@@ -265,7 +273,9 @@ declare OUTPUT_FILE=''
 check_dependencies || die "Dependencies not met, can't continue"
 
 # Arguments
-OPTS="$(getopt -o hbcltwosq -l help,version,license,binary,check,length,text,tag,ignore-missing,quiet,status,strict,warn,output -n "$PROGRAM" -- "$@")"
+OPTS="$(getopt -o hbctwosql: -l help,version,license,binary,check,length:,text,tag,ignore-missing,quiet,status,strict,warn,output -n "$PROGRAM" -- "$@")"
+[[ $? -ne 0 ]] && die "Wrong option. Try '$PROGRAM --help' for more information."
+
 eval set -- "$OPTS"
 while true; do case $1 in
 	-h|--help)			cmd_help; exit $EXIT_SUCCESS;;
@@ -273,7 +283,7 @@ while true; do case $1 in
 	--license)			cmd_license; exit $EXIT_SUCCESS;;
 	-b|--binary)		B2SUM_OPTS+=( '--binary' ); shift;;
 	-c|--check)			MODE_CHECK=true; shift;;
-	-l|--length)		B2SUM_OPTS+=( '--length' ); shift;;
+	-l|--length)		B2SUM_OPTS+=( '--length' "$2" ); shift 2;;
 	--tag)				B2SUM_OPTS+=( '--tag' ); shift;;
 	-t|--text)			B2SUM_OPTS+=( '--text' ); shift;;
 	--ignore-missing)	B2SUM_OPTS_CHECK+=( '--ignore-missing' ); shift;;
