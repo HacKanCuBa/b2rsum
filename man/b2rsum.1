@@ -1,4 +1,4 @@
-.TH B2RSUM "1" "April 2017" "b2rsum Copyright (C) 2017 HacKan (https://hackan.net)" "BLAKE2 Recursive Sum"
+.TH B2RSUM "1" "April 2017" "b2rsum v0.1.2" "BLAKE2 Recursive Sum"
 
 .SH NAME
 b2rsum \- compute and check BLAKE2 message digest recursively
@@ -15,55 +15,75 @@ wrapper that adds the capability of processing an entire directory, so the sums 
 
 When FILE or DIRECTORY is empty or a dot (.), compute current directory. When FILE is -, read standard input.
 
+The default mode is to compute checksums. Check mode is indicated with --check.
+
 .SH OPTIONS
-.TP
-\fB\-b\fR, \fB\-\-binary\fR
-read in binary mode
 .TP
 \fB\-c\fR, \fB\-\-check\fR
 read BLAKE2 sums from the FILEs and check them
+
 .TP
-\fB\-l\fR, \fB\-\-length\fR
-digest length in bits; must not exceed the maximum for
-the blake2 algorithm and must be a multiple of 8
-.TP
-\fB\-\-tag\fR
-create a BSD\-style checksum
-.TP
-\fB\-t\fR, \fB\-\-text\fR
-read in text mode (default)
-.TP
-\fB\-o\fR, \fB\-\-output\fR
-output to a file named BLAKE2SUMS in the
-current directory instead of standard output
+\fB\-o\fR[\fI\,FILE\/\fR], \fB\-\-output\fR[=\fI\,FILE\/\fR]
+output to FILE instead of standard output, or a
+file named BLAKE2SUMS in the current
+directory if FILE is not specified
+
 .TP
 \fB\-q\fR, \fB\-\-quiet\fR
 quiet mode: don't print messages, only hashes; during
 check mode, don't print OK for each successfully
 verified file
+
 .TP
 \fB\-s\fR, \fB\-\-status\fR
 very quiet mode: output only hashes, no messages; status
 code shows success
-.SS "The following three options are useful only when verifying checksums:"
-.TP
-\fB\-\-ignore\-missing\fR
-don't fail or report status for missing files
-.TP
-\fB\-\-strict\fR
-exit non\-zero for improperly formatted checksum lines
-.TP
-\fB\-w\fR, \fB\-\-warn\fR
-warn about improperly formatted checksum lines
-.TP
-\fB\-h\fR, \fB\-\-help\fR
-show this text and exit
+
 .TP
 \fB\-\-license\fR
 show license and exit
+
 .TP
 \fB\-\-version\fR
 show version information and exit
+
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+show this text and exit
+
+.SS "The following four options are useful only when computing checksums:"
+
+.TP
+\fB\-t\fR, \fB\-\-text\fR
+read in text mode (default)
+
+.TP
+\fB\-b\fR, \fB\-\-binary\fR
+read in binary mode
+
+.TP
+\fB\-\-tag\fR
+create a BSD\-style checksum
+
+.TP
+\fB\-l\fR, \fB\-\-length\fR
+digest length in bits; must not exceed the maximum for
+the blake2 algorithm and must be a multiple of 8
+
+.SS "The following three options are useful only when verifying checksums:"
+
+.TP
+\fB\-\-ignore\-missing\fR
+don't fail or report status for missing files
+
+.TP
+\fB\-\-strict\fR
+exit non\-zero for improperly formatted checksum lines
+
+.TP
+\fB\-w\fR, \fB\-\-warn\fR
+warn about improperly formatted checksum lines
+
 .PP
 The sums are computed as described in RFC 7693.  When checking, the input
 should be a former output of this program.  The default mode is to print a
@@ -74,7 +94,7 @@ line with checksum, a space, a character indicating input mode ('*' for binary,
 .BR b2sum (1)
 
 .SH AUTHOR
-.B b2sum
+.B b2rsum
 was written by
 .MT hackan@gmail.com
 HacKan
@@ -84,6 +104,12 @@ Check the
 repository
 .UE
 for additional information.
+
+.SH REPORTING BUGS
+Please create an issue at the
+.UR https://\:github.com/HacKanCuBa/b2rsum/issues
+repository
+.UE .
 
 .SH COPYING
 This program is free software: you can redistribute it and/or modify

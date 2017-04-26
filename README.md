@@ -11,7 +11,13 @@ These come by default in most modern distros.
 
 ## Installing
 
-Clone this repository or download a [release](https://github.com/HacKanCuBa/b2rsum/releases), then run `make install` as privileged user (probably `sudo make install`). You can optionally do `make lint` to check for errors (it uses [shellcheck](https://github.com/koalaman/shellcheck)).
+Clone this repository or download a [release](https://github.com/HacKanCuBa/b2rsum/releases), then run `make install` as privileged user (probably `sudo make install`).
+
+### Verifying
+
+You can optionally do `make lint && make test` to check for errors (it requires [shellcheck](https://github.com/koalaman/shellcheck) for linting), specially if you are cloning the repository.
+
+Tests can also be run individually with `make tests/tXXXX-description.sh` and debugged with `./tests/tXXXX-description.sh -v`. [Sharness](https://github.com/chriscool/sharness) is used as framework.
 
 ## Examples of use
 

@@ -12,20 +12,36 @@ test_expect_success 'Verify license' '
     "$B2RSUM" --license | grep "under the terms of the GNU General Public License"
 '
 
+test_expect_success 'Verify default behaviour' '
+    "$B2RSUM" && "$B2RSUM" | grep "786a02f742015903c6c6fd852552d272912f4740e15847618a86e217f71f5419d25e1031afee585313896444934eb04b903a685b1448b755d56f701afe9be2ce  "
+'
+
 test_expect_success 'Verify invalid parameter: --invalid' '
     ! "$B2RSUM" --invalid
+'
+
+test_expect_success 'Verify parameter w/o argument: --output' '
+    "$B2RSUM" --output && [[ -r BLAKE2SUMS ]]
+'
+
+test_expect_success 'Verify parameter w/right argument: --output' '
+    "$B2RSUM" --output=B2SUMS && [[ -r B2SUMS ]]
+'
+
+test_expect_success 'Verify parameter w/wrong argument: --output' '
+    ! "$B2RSUM" --output WRONG
 '
 
 test_expect_success 'Verify parameter w/o argument: --length' '
     ! "$B2RSUM" --length
 '
 
-test_expect_success 'Verify parameter w/wrong argument: --length' '
-    ! "$B2RSUM" --length 7
+test_expect_success 'Verify parameter w/right argument: --length' '
+    "$B2RSUM" --length 8
 '
 
-test_expect_success 'Verify default behaviour' '
-    "$B2RSUM"
+test_expect_success 'Verify parameter w/wrong argument: --length' '
+    ! "$B2RSUM" --length 7
 '
 
 test_expect_success 'Verify --quiet during creation' '

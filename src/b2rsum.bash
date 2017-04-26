@@ -34,13 +34,17 @@
 # Changelog
 #=====================
 #
+# v0.1.2
+# - Some changes in the order of info in help message.
+# - Output option now accepts optional argument.
+#
 # v0.1.1
-# - Fix check mode not reading inline data
-# - Fix length option being improperly parsed
-# - Bail out on wrong option
+# - Fix check mode not reading inline data.
+# - Fix length option being improperly parsed.
+# - Bail out on wrong option.
 #
 # v0.1.0
-# - First release
+# - First release.
 #
 # v0.0.1
 # - Developing based on sharsum.
@@ -48,7 +52,7 @@
 #------------------------------------------------------------------------
 
 # Config
-declare -r VERSION="0.1.1"
+declare -r VERSION="0.1.2"
 declare -r OUTPUT_FILENAME_DEFAULT="BLAKE2SUMS"
 declare -r QUIET_DEFAULT=false
 #--------------------------#
@@ -146,33 +150,38 @@ cmd_help() {
 	cat <<-_EOF
 
 		Usage: ${PROGRAM} [OPTION]... [FILE or DIRECTORY]...
+
 		Print or check BLAKE2 (512-bit) checksums recursively.
 		If no FILE or DIRECTORY is indicated, or it's a dot (.), then the current
 		directory is processed.
+		The default mode is to compute checksums. Check mode is indicated with --check.
 
 		Options:
-		  -b, --binary         read in binary mode
-		  -c, --check          read BLAKE2 sums from the FILEs and check them
-		  -l, --length         digest length in bits; must not exceed the maximum for
-		                       the blake2 algorithm and must be a multiple of 8
-		      --tag            create a BSD-style checksum
-		  -t, --text           read in text mode (default)
-		  -o, --output         output to a file named $OUTPUT_FILENAME_DEFAULT in the
-		                       current directory instead of standard output
-		  -q, --quiet          quiet mode: don't print messages, only hashes; during
-		                       check mode, don't print OK for each successfully
-		                       verified file
-		  -s, --status         very quiet mode: output only hashes, no messages; status
-		                       code shows success
+		  -c, --check                read BLAKE2 sums from the FILEs and check them
+		  -o[FILE], --output[=FILE]  output to FILE instead of standard output, or a
+		                             file named $OUTPUT_FILENAME_DEFAULT in the current
+		                             directory if FILE is not specified
+		  -q, --quiet                quiet mode: don't print messages, only hashes;
+		                             during check mode, don't print OK for each
+		                             successfully verified file
+		  -s, --status               very quiet mode: output only hashes, no messages;
+		                             status code shows success
+		  --license                  show license and exit
+		  --version                  show version information and exit
+		  -h, --help                 show this text and exit
+
+		The following four options are useful only when computing checksums:
+		  -t, --text                 read in text mode (default)
+		  -b, --binary               read in binary mode
+		      --tag                  create a BSD-style checksum
+		  -l, --length               digest length in bits; must not exceed the maximum
+		                             for the blake2 algorithm and must be a multiple
+		                             of 8
 
 		The following three options are useful only when verifying checksums:
 		      --ignore-missing  don't fail or report status for missing files
 		      --strict         exit non-zero for improperly formatted checksum lines
 		  -w, --warn           warn about improperly formatted checksum lines
-
-		  -h, --help           show this text and exit
-		  --license            show license and exit
-		  --version            show version information and exit
 
 		Sums are made using 'b2sum'. Full documentation at: 
 		  <http://www.gnu.org/software/coreutils/b2sum>.
@@ -273,7 +282,7 @@ declare OUTPUT_FILE=''
 check_dependencies || die "Dependencies not met, can't continue"
 
 # Arguments
-OPTS="$(getopt -o hbctwosql: -l help,version,license,binary,check,length:,text,tag,ignore-missing,quiet,status,strict,warn,output -n "$PROGRAM" -- "$@")"
+OPTS="$(getopt -o hbctwsql:o:: -l help,version,license,binary,check,length:,text,tag,ignore-missing,quiet,status,strict,warn,output:: -n "$PROGRAM" -- "$@")"
 [[ $? -ne 0 ]] && die "Wrong option. Try '$PROGRAM --help' for more information."
 
 eval set -- "$OPTS"
@@ -291,7 +300,10 @@ while true; do case $1 in
 	-s|--status)		VERY_QUIET=true; B2SUM_OPTS_CHECK+=( '--status' ); shift;;
 	--strict)			B2SUM_OPTS_CHECK+=( '--strict' ); shift;;
 	-w|--warn)			B2SUM_OPTS_CHECK+=( '--warn' ); shift;;
-	-o|--output)		OUTPUT_FILE="$OUTPUT_FILENAME_DEFAULT"; check_output_file; shift;;
+	-o|--output)		OUTPUT_FILE="${2:-$OUTPUT_FILENAME_DEFAULT}"
+						check_output_file
+						shift 2
+						;;
 	--) shift; break ;;
 esac done
 
