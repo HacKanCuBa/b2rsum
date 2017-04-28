@@ -4,7 +4,7 @@ test_description='Files tests with options'
 cd "$(dirname "$0")"
 . ./setup.sh
 
-FILE="$(tempfile -d "$SHARNESS_TRASH_DIRECTORY")"
+FILE="$(mktemp --tmpdir="$DIRECTORY" "$(basename "$0")-XXXX.tmp")"
 printf "%s" "5mo0NIVqkY2Iwg2AfuOG/qZ8cNKLFLaIbZxoPYsMR5div4ek4zLfYNu+HBgeVeRMFR6jLJgwSFWBQy/uFl37fg==" | base64 -d > "$FILE" 
 
 test_expect_success 'Check file operation with --binary' '

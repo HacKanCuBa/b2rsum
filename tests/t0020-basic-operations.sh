@@ -7,7 +7,7 @@ cd "$(dirname "$0")"
 RANDOM_VALUE='5mo0NIVqkY2Iwg2AfuOG/qZ8cNKLFLaIbZxoPYsMR5div4ek4zLfYNu+HBgeVeRMFR6jLJgwSFWBQy/uFl37fg=='
 DIRECTORY="$SHARNESS_TRASH_DIRECTORY/dir"
 mkdir -p "$DIRECTORY"
-FILE="$(tempfile -d "$DIRECTORY")"
+FILE="$(mktemp --tmpdir="$DIRECTORY" "$(basename "$0")-XXXX.tmp")"
 printf "%s" "$RANDOM_VALUE" | base64 -d > "$FILE" 
 
 test_expect_success 'Check inline operation' '

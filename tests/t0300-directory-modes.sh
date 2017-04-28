@@ -6,8 +6,8 @@ cd "$(dirname "$0")"
 
 DIRECTORY="$SHARNESS_TRASH_DIRECTORY/dir"
 mkdir -p "$DIRECTORY"
-FILE1="$(tempfile -d "$DIRECTORY")"
-FILE2="$(tempfile -d "$DIRECTORY")"
+FILE1="$(mktemp --tmpdir="$DIRECTORY" "$(basename "$0")-XXXX.tmp")"
+FILE2="$(mktemp --tmpdir="$DIRECTORY" "$(basename "$0")-XXXX.tmp")"
 printf "%s" "5mo0NIVqkY2Iwg2AfuOG/qZ8cNKLFLaIbZxoPYsMR5div4ek4zLfYNu+HBgeVeRMFR6jLJgwSFWBQy/uFl37fg==" | base64 -d > "$FILE1"
 printf "%s" "Zv8gQKaTEIFRZcCpFZtii0zSMMoNPgJdv7eSUmAT4d7uecQflbersChnaqvwoaRxIvMu8dN9WQpFmGJe67gjBg==" | base64 -d > "$FILE2"
 
