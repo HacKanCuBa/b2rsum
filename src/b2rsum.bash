@@ -7,7 +7,7 @@
 #
 ##############################################################################
 #
-#    b2rsum Copyright © 2017 HacKan (https://hackan.net)
+#    b2rsum Copyright © 2017, 2018, 2019, 2020 HacKan (https://hackan.net)
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation, either version 3 of the License, or
@@ -34,6 +34,11 @@
 # Changelog
 #=====================
 #
+# v0.1.3
+# - Greatly improve readme with use cases and help output.
+# - Replace `tempfile` with `mktemp` which is more common among diff distros.
+# - Replace `which` with `command -v` which is built-in.
+#
 # v0.1.2
 # - Some changes in the order of info in help message.
 # - Output option now accepts optional argument.
@@ -52,7 +57,7 @@
 #------------------------------------------------------------------------
 
 # Config
-declare -r VERSION="0.1.2"
+declare -r VERSION="0.1.3"
 declare -r OUTPUT_FILENAME_DEFAULT="BLAKE2SUMS"
 declare -r QUIET_DEFAULT=false
 #--------------------------#
@@ -122,7 +127,7 @@ check_dependencies() {
 cmd_license() {
 	cat <<-_EOF
 		${PROGRAM}: recursive BLAKE2 hash maker and verifier
-		Copyright (C) 2017 HacKan (https://hackan.net)
+		Copyright (C) 2020 HacKan (https://hackan.net)
 
 		This program is free software: you can redistribute it and/or modify
 		it under the terms of the GNU General Public License as published by
@@ -141,7 +146,7 @@ cmd_license() {
 
 cmd_version() {
 	cat <<-_EOF
-		${PROGRAM} v${VERSION} Copyright (C) 2017 HacKan (https://hackan.net)
+		${PROGRAM} v${VERSION} Copyright (C) 2020 HacKan (https://hackan.net)
 	_EOF
 }
 
