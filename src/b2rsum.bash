@@ -113,7 +113,7 @@ check_dependencies() {
 	DEPENDENCIES=( "b2sum" "getopt" )
 	result=0
 	for dep in "${DEPENDENCIES[@]}"; do
-		which "$dep" > /dev/null 2>&1
+		command -v "$dep" > /dev/null 2>&1
 		result=$((result | $?))
 	done
 	return $result
@@ -283,6 +283,7 @@ check_dependencies || die "Dependencies not met, can't continue"
 
 # Arguments
 OPTS="$(getopt -o hbctwsql:o:: -l help,version,license,binary,check,length:,text,tag,ignore-missing,quiet,status,strict,warn,output:: -n "$PROGRAM" -- "$@")"
+# shellcheck disable=SC2181
 [[ $? -ne 0 ]] && die "Wrong option. Try '$PROGRAM --help' for more information."
 
 eval set -- "$OPTS"
