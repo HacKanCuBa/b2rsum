@@ -1,16 +1,16 @@
-.TH B2RSUM "1" "February 2020" "b2rsum v0.1.3" "BLAKE2 Recursive Sum"
+.TH B3RSUM "1" "February 2020" "b3rsum v0.1.3" "BLAKE3 Recursive Sum"
 
 .SH NAME
-b2rsum \- compute and check BLAKE2 message digest recursively
+b3rsum \- compute and check BLAKE3 message digest recursively
 
 .SH SYNOPSIS
-.B b2rsum
+.B b3rsum
 [\fI\,OPTION\/\fR]... [\fI\,FILE or DIRECTORY\/\fR]...
 
 .SH DESCRIPTION
-.B b2rsum
-is a bash script to print or check BLAKE2 checksums recursively. It's a 
-.BR b2sum (1)
+.B b3rsum
+is a bash script to print or check BLAKE3 checksums recursively. It's a 
+.BR b3sum (1)
 wrapper that adds the capability of processing an entire directory, so the sums are made using it.
 
 When FILE or DIRECTORY is empty or a dot (.), compute current directory. When FILE is -, read standard input.
@@ -20,12 +20,12 @@ The default mode is to compute checksums. Check mode is indicated with --check.
 .SH OPTIONS
 .TP
 \fB\-c\fR, \fB\-\-check\fR
-read BLAKE2 sums from the FILEs and check them
+read BLAKE3 sums from the FILEs and check them
 
 .TP
 \fB\-o\fR[\fI\,FILE\/\fR], \fB\-\-output\fR[=\fI\,FILE\/\fR]
 output to FILE instead of standard output, or a
-file named BLAKE2SUMS in the current
+file named BLAKE3SUMS in the current
 directory if FILE is not specified
 
 .TP
@@ -91,23 +91,23 @@ line with checksum, a space, a character indicating input mode ('*' for binary,
 \&' ' for text or where binary is insignificant), and name for each FILE.
 
 .SH "SEE ALSO"
-.BR b2sum (1)
+.BR b3sum (1)
 
 .SH AUTHOR
-.B b2rsum
+.B b3rsum
 was written by
 .MT hackan@gmail.com
 HacKan
 .ME .
 Check the
-.UR https://\:github.com/hackancuba/b2rsum/
+.UR https://\:github.com/hackancuba/b3rsum/
 repository
 .UE
 for additional information.
 
 .SH REPORTING BUGS
 Please create an issue at the
-.UR https://\:github.com/HacKanCuBa/b2rsum/issues
+.UR https://\:github.com/HacKanCuBa/b3rsum/issues
 repository
 .UE .
 

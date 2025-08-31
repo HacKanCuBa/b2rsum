@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 
 #-----------------------------------------------------------------------------
-# b2rsum
-# Create and verify BLAKE2 hash sums from files or directories recursively.
-# It uses GNU b2sum internally, and its output file is fully compatible.
+# b3rsum
+# Create and verify BLAKE3 hash sums from files or directories recursively.
+# It uses GNU b3sum internally, and its output file is fully compatible.
 #
 ##############################################################################
 #
-#    b2rsum Copyright © 2017, 2018, 2019, 2020 HacKan (https://hackan.net)
+#    b3rsum Copyright © 2017, 2018, 2019, 2020 HacKan (https://hackan.net)
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation, either version 3 of the License, or
@@ -27,8 +27,9 @@
 # ===============
 #
 #  - GNU Bash
-#  - GNU b2sum which is part of the coreutils package.
+#  - GNU b3sum which is part of the coreutils package.
 #  - GNU Getopt which is part of the util-linux package.
+#  - GNU parallel for improved performance.
 #
 #------------------------------------------------------------------------
 # Changelog
@@ -58,7 +59,7 @@
 
 # Config
 declare -r VERSION="0.1.3"
-declare -r OUTPUT_FILENAME_DEFAULT="BLAKE2SUMS"
+declare -r OUTPUT_FILENAME_DEFAULT="BLAKE3SUMS"
 declare -r QUIET_DEFAULT=false
 #--------------------------#
 
@@ -115,7 +116,7 @@ check_output_file() {
 check_dependencies() {
 	# Returns 0 if dependencies are installed, non-zero otherwise
 	local -a DEPENDENCIES dep result
-	DEPENDENCIES=( "b2sum" "getopt" )
+	DEPENDENCIES=( "b3sum" "getopt" "parallel" )
 	result=0
 	for dep in "${DEPENDENCIES[@]}"; do
 		command -v "$dep" > /dev/null 2>&1
@@ -126,7 +127,7 @@ check_dependencies() {
 
 cmd_license() {
 	cat <<-_EOF
-		${PROGRAM}: recursive BLAKE2 hash maker and verifier
+		${PROGRAM}: recursive BLAKE3 hash maker and verifier
 		Copyright (C) 2020 HacKan (https://hackan.net)
 
 		This program is free software: you can redistribute it and/or modify
@@ -156,13 +157,13 @@ cmd_help() {
 
 		Usage: ${PROGRAM} [OPTION]... [FILE or DIRECTORY]...
 
-		Print or check BLAKE2 (512-bit) checksums recursively.
+		Print or check BLAKE3 checksums recursively.
 		If no FILE or DIRECTORY is indicated, or it's a dot (.), then the current
 		directory is processed.
 		The default mode is to compute checksums. Check mode is indicated with --check.
 
 		Options:
-		  -c, --check                read BLAKE2 sums from the FILEs and check them
+		  -c, --check                read BLAKE3 sums from the FILEs and check them
 		  -o[FILE], --output[=FILE]  output to FILE instead of standard output, or a
 		                             file named $OUTPUT_FILENAME_DEFAULT in the current
 		                             directory if FILE is not specified
@@ -188,8 +189,8 @@ cmd_help() {
 		      --strict         exit non-zero for improperly formatted checksum lines
 		  -w, --warn           warn about improperly formatted checksum lines
 
-		Sums are made using 'b2sum'. Full documentation at: 
-		  <http://www.gnu.org/software/coreutils/b2sum>.
+		Sums are made using 'b3sum'. Full documentation at: 
+		  <https://github.com/BLAKE3-team/BLAKE3>.
 		The sums are computed as described in RFC 7693.  When checking, the input
 		should be a former output of this program.  The default mode is to print a
 		line with checksum, a space, a character indicating input mode ('*' for binary,
@@ -218,10 +219,10 @@ cmd_create() {
 
 		if [[ "$item" == "-" ]]; then
 			# shellcheck disable=SC2016
-			EXEC='cat - | b2sum $([[ ${#B2SUM_OPTS[*]} -ge 1 ]] && printf "%s" "${B2SUM_OPTS[*]}") -'
+			EXEC='cat - | b3sum $([[ ${#B3SUM_OPTS[*]} -ge 1 ]] && printf "%s" "${B3SUM_OPTS[*]}") -'
 		elif [[ -e "$item" ]]; then
 			# shellcheck disable=SC2016
-			EXEC='find -L "$item" -type f ! -name "$OUTPUT_FILE" -print0 | xargs -0 b2sum $([[ ${#B2SUM_OPTS[*]} -ge 1 ]] && printf "%s" "${B2SUM_OPTS[*]}")'
+			EXEC='find -L "$item" -type f ! -name "$OUTPUT_FILE" -print0 | parallel -0 b3sum $([[ ${#B3SUM_OPTS[*]} -ge 1 ]] && printf "%s" "${B3SUM_OPTS[*]}") {}'
 		else
 			# shellcheck disable=SC2016
 			EXEC='warn "File '$item' not found, skipping..."'
@@ -252,10 +253,10 @@ cmd_check() {
 
 		if [[ "$hashfile" == "-" ]]; then
 			# shellcheck disable=SC2016
-			EXEC='cat - | b2sum --check $([[ ${#B2SUM_OPTS[*]} -ge 1 ]] && printf "%s" "${B2SUM_OPTS[*]}") $([[ ${#B2SUM_OPTS_CHECK[*]} -ge 1 ]] && printf "%s" "${B2SUM_OPTS_CHECK[*]}") -'
+			EXEC='cat - | b3sum --check $([[ ${#B3SUM_OPTS[*]} -ge 1 ]] && printf "%s" "${B3SUM_OPTS[*]}") $([[ ${#B3SUM_OPTS_CHECK[*]} -ge 1 ]] && printf "%s" "${B3SUM_OPTS_CHECK[*]}") -'
 		elif [[ -r "$hashfile" ]]; then
 			# shellcheck disable=SC2016
-			EXEC='b2sum --check $([[ ${#B2SUM_OPTS[*]} -ge 1 ]] && printf "%s" "${B2SUM_OPTS[*]}") $([[ ${#B2SUM_OPTS_CHECK[*]} -ge 1 ]] && printf "%s" "${B2SUM_OPTS_CHECK[*]}") "$hashfile"'
+			EXEC='b3sum --check $([[ ${#B3SUM_OPTS[*]} -ge 1 ]] && printf "%s" "${B3SUM_OPTS[*]}") $([[ ${#B3SUM_OPTS_CHECK[*]} -ge 1 ]] && printf "%s" "${B3SUM_OPTS_CHECK[*]}") "$hashfile"'
 		else
 			# shellcheck disable=SC2016
 			EXEC='warn "File '$hashfile' not found or can not be accessed, skipping..."'
@@ -276,8 +277,8 @@ cmd_check() {
 
 # Main
 declare -r PROGRAM="${0##*/}"
-declare -a B2SUM_OPTS=()
-declare -a B2SUM_OPTS_CHECK=()
+declare -a B3SUM_OPTS=()
+declare -a B3SUM_OPTS_CHECK=()
 declare OPTS=''
 declare MODE_CHECK=false
 declare QUIET=$QUIET_DEFAULT
@@ -296,16 +297,16 @@ while true; do case $1 in
 	-h|--help)			cmd_help; exit $EXIT_SUCCESS;;
 	--version)			cmd_version; exit $EXIT_SUCCESS;;
 	--license)			cmd_license; exit $EXIT_SUCCESS;;
-	-b|--binary)		B2SUM_OPTS+=( '--binary' ); shift;;
+	-b|--binary)		B3SUM_OPTS+=( '--binary' ); shift;;
 	-c|--check)			MODE_CHECK=true; shift;;
-	-l|--length)		B2SUM_OPTS+=( '--length' "$2" ); shift 2;;
-	--tag)				B2SUM_OPTS+=( '--tag' ); shift;;
-	-t|--text)			B2SUM_OPTS+=( '--text' ); shift;;
-	--ignore-missing)	B2SUM_OPTS_CHECK+=( '--ignore-missing' ); shift;;
-	-q|--quiet)			QUIET=true; B2SUM_OPTS_CHECK+=( '--quiet' ); shift;;
-	-s|--status)		VERY_QUIET=true; B2SUM_OPTS_CHECK+=( '--status' ); shift;;
-	--strict)			B2SUM_OPTS_CHECK+=( '--strict' ); shift;;
-	-w|--warn)			B2SUM_OPTS_CHECK+=( '--warn' ); shift;;
+	-l|--length)		B3SUM_OPTS+=( '--length' "$2" ); shift 2;;
+	--tag)				B3SUM_OPTS+=( '--tag' ); shift;;
+	-t|--text)			B3SUM_OPTS+=( '--text' ); shift;;
+	--ignore-missing)	B3SUM_OPTS_CHECK+=( '--ignore-missing' ); shift;;
+	-q|--quiet)			QUIET=true; B3SUM_OPTS_CHECK+=( '--quiet' ); shift;;
+	-s|--status)		VERY_QUIET=true; B3SUM_OPTS_CHECK+=( '--status' ); shift;;
+	--strict)			B3SUM_OPTS_CHECK+=( '--strict' ); shift;;
+	-w|--warn)			B3SUM_OPTS_CHECK+=( '--warn' ); shift;;
 	-o|--output)		OUTPUT_FILE="${2:-$OUTPUT_FILENAME_DEFAULT}"
 						check_output_file
 						shift 2
