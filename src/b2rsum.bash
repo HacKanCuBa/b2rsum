@@ -221,12 +221,12 @@ cmd_create() {
 			EXEC='cat - | b2sum $([[ ${#B2SUM_OPTS[*]} -ge 1 ]] && printf "%s" "${B2SUM_OPTS[*]}") -'
 		elif [[ -e "$item" ]]; then
 			# shellcheck disable=SC2016
-			EXEC='find -L "$item" -type f ! -name "$OUTPUT_FILE" -print0 | xargs -0 b2sum $([[ ${#B2SUM_OPTS[*]} -ge 1 ]] && printf "%s" "${B2SUM_OPTS[*]}")'
+			EXEC='find -L "$item" -type f ! -wholename "$OUTPUT_FILE" -print0 | xargs -0 b2sum $([[ ${#B2SUM_OPTS[*]} -ge 1 ]] && printf "%s" "${B2SUM_OPTS[*]}")'
 		else
 			# shellcheck disable=SC2016
 			EXEC='warn "File '$item' not found, skipping..."'
 		fi
-		
+
 		if [[ -z "$OUTPUT_FILE" ]]; then
 			eval "$EXEC"
 		else
